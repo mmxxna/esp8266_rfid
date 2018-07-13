@@ -25,6 +25,11 @@
 #ifndef __USER_CONFIG_H__
 #define __USER_CONFIG_H__
 
+/*uart demo with a system task, to output what uart receives*/
+/*this is a example to process uart data from task,please change the priority to fit your application task if exists*/
+/*it might conflict with your task, if so,please arrange the priority of different task,  or combine it to a different event in the same task. */
+#define uart_recvTaskPrio        0
+
 #define ESP_PLATFORM        1
 #define LEWEI_PLATFORM      0
 

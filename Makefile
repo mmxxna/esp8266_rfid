@@ -20,12 +20,12 @@ BOOT ?= new
 APP ?= 1
 SPI_SPEED ?= 40
 SPI_MODE ?= QIO
-SPI_SIZE_MAP ?= 6
+SPI_SIZE_MAP ?= 4
 
 #VERBOSE = 1
 
 # Basic project settings
-MODULES	= user
-LIBS	= c gcc hal phy pp net80211 lwip wpa crypto main json smartconfig airkiss
+MODULES	= user driver
+LIBS	= c gcc hal phy pp net80211 lwip wpa crypto main json smartconfig airkiss driver
 # Root includes
 include	../common_nonos.mk

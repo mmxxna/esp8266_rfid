@@ -30,12 +30,13 @@
 #include "c_types.h"
 #include "user_interface.h"
 #include "smartconfig.h"
+#include "driver/uart.h"
+#include "user_rfid.h"
+#include "user_LLRP.h"
 
 LOCAL struct espconn esp_conn;
 LOCAL esp_tcp esptcp;
 LOCAL os_timer_t test_timer;
-
-#define SERVER_LOCAL_PORT   5084
 
 //os_timer_t hello_world_timer;
 
@@ -117,7 +118,7 @@ tcp_server_sent_cb(void *arg)
 {
    //data sent successfully
 
-    os_printf("tcp sent cb \r\n");
+//    os_printf("tcp sent cb \r\n");
 }
 
 /******************************************************************************
@@ -132,7 +133,7 @@ tcp_server_recv_cb(void *arg, char *pusrdata, unsigned short length)
    //received some data from tcp connection
 
    struct espconn *pespconn = arg;
-   os_printf("tcp recv : %s \r\n", pusrdata);
+//   os_printf("tcp recv : %s \r\n", pusrdata);
 
    espconn_sent(pespconn, pusrdata, length);
 
@@ -162,7 +163,7 @@ tcp_server_recon_cb(void *arg, sint8 err)
 {
    //error occured , tcp connection broke.
 
-    os_printf("reconnect callback, error code %d !!! \r\n",err);
+    os_printf("tcp reconnect callback, error code %d !!! \r\n",err);
 }
 
 LOCAL void tcp_server_multi_send(void)
@@ -295,6 +296,43 @@ user_set_station_config(void)
    os_timer_arm(&test_timer, 100, 0);
 }
 
+void ICACHE_FLASH_ATTR
+uart_recvTask(os_event_t *events)
+{
+    if(events->sig == 0){
+    #if  UART_BUFF_EN
+        Uart_rx_buff_enq();
+    #else
+        uint8 fifo_len = (READ_PERI_REG(UART_STATUS(UART0))>>UART_RXFIFO_CNT_S)&UART_RXFIFO_CNT;
+        uint8 d_tmp = 0;
+        uint8 idx=0;
+
+        struct espconn *pesp_conn = &esp_conn;
+        remot_info *premot = NULL;
+        uint8 count = 0;
+        sint8 value = ESPCONN_OK;
+
+        for(idx=0;idx<fifo_len;idx++) {
+            d_tmp = READ_PERI_REG(UART_FIFO(UART0)) & 0xFF;
+//            uart_tx_one_char(UART0, d_tmp);
+            if (espconn_get_connection_info(pesp_conn,&premot,0) == ESPCONN_OK){
+            	espconn_sent(pesp_conn, d_tmp, 1);
+            }
+
+        }
+        WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_FULL_INT_CLR|UART_RXFIFO_TOUT_INT_CLR);
+        uart_rx_intr_enable(UART0);
+    #endif
+    }else if(events->sig == 1){
+    #if UART_BUFF_EN
+	 //already move uart buffer output to uart empty interrupt
+        //tx_start_uart_buffer(UART0);
+    #else
+
+    #endif
+    }
+}
+
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
@@ -307,6 +345,9 @@ user_init(void)
 	bool has_connection_information = false;
 
 //	system_uart_swap();
+
+	uart_init(115200, 115200); // using uart1 as debug output
+	system_os_task(uart_recvTask, uart_recvTaskPrio, uart_recvTaskQueue, uart_recvTaskQueueLen);
 
     os_printf("\r\nSDK version:%s ,", system_get_sdk_version());
 	os_printf(" Compile time:%s %s\r\n", __DATE__, __TIME__);

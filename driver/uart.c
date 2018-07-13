@@ -39,9 +39,9 @@ LOCAL struct UartBuffer* pRxBuffer = NULL;
 /*uart demo with a system task, to output what uart receives*/
 /*this is a example to process uart data from task,please change the priority to fit your application task if exists*/
 /*it might conflict with your task, if so,please arrange the priority of different task,  or combine it to a different event in the same task. */
-#define uart_recvTaskPrio        0
-#define uart_recvTaskQueueLen    10
-os_event_t    uart_recvTaskQueue[uart_recvTaskQueueLen];
+//#define uart_recvTaskPrio        0
+//#define uart_recvTaskQueueLen    10
+//os_event_t    uart_recvTaskQueue[uart_recvTaskQueueLen];
 
 #define DBG  
 #define DBG1 uart1_sendStr_no_wait
@@ -111,9 +111,9 @@ uart_config(uint8 uart_no)
 }
 
 /******************************************************************************
- * FunctionName : uart1_tx_one_char
+ * FunctionName : uart_tx_one_char
  * Description  : Internal used function
- *                Use uart1 interface to transfer one char
+ *                Use uart0 interface to transfer one char
  * Parameters   : uint8 TxChar - character to tx
  * Returns      : OK
 *******************************************************************************/
@@ -287,38 +287,11 @@ uart_test_rx()
 }
 #endif
 
-LOCAL void ICACHE_FLASH_ATTR ///////
-uart_recvTask(os_event_t *events)
-{
-    if(events->sig == 0){
-    #if  UART_BUFF_EN  
-        Uart_rx_buff_enq();
-    #else
-        uint8 fifo_len = (READ_PERI_REG(UART_STATUS(UART0))>>UART_RXFIFO_CNT_S)&UART_RXFIFO_CNT;
-        uint8 d_tmp = 0;
-        uint8 idx=0;
-        for(idx=0;idx<fifo_len;idx++) {
-            d_tmp = READ_PERI_REG(UART_FIFO(UART0)) & 0xFF;
-            uart_tx_one_char(UART0, d_tmp);
-        }
-        WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_FULL_INT_CLR|UART_RXFIFO_TOUT_INT_CLR);
-        uart_rx_intr_enable(UART0);
-    #endif
-    }else if(events->sig == 1){
-    #if UART_BUFF_EN
-	 //already move uart buffer output to uart empty interrupt
-        //tx_start_uart_buffer(UART0);
-    #else 
-    
-    #endif
-    }
-}
-
 void ICACHE_FLASH_ATTR
 uart_init(UartBautRate uart0_br, UartBautRate uart1_br)
 {
     /*this is a example to process uart data from task,please change the priority to fit your application task if exists*/
-    system_os_task(uart_recvTask, uart_recvTaskPrio, uart_recvTaskQueue, uart_recvTaskQueueLen);  //demo with a task to process the uart data
+//    system_os_task(uart_recvTask, uart_recvTaskPrio, uart_recvTaskQueue, uart_recvTaskQueueLen);  //demo with a task to process the uart data
     
     UartDev.baut_rate = uart0_br;
     uart_config(UART0);
@@ -337,7 +310,7 @@ uart_init(UartBautRate uart0_br, UartBautRate uart1_br)
 
     /*option 2: output from uart1,uart1 output will not wait , just for output debug info */
     /*os_printf output uart data via uart1(GPIO2)*/
-    //os_install_putc1((void *)uart1_write_char);    //use this one to output debug information via uart1 //
+    os_install_putc1((void *)uart1_write_char);    //use this one to output debug information via uart1 //
 
     /*option 3: output from uart0 will skip current byte if fifo is full now... */
     /*see uart0_write_char_no_wait:you can output via a buffer or output directly */

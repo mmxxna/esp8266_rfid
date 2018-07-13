@@ -6,6 +6,7 @@
 #define USER_PARAM_SECTOR    0xF8
 
 #define USER_PARAM_TOTAL_LEN   ((4 + 32 + 64 + 4) / 4)  // in DWords, so the parameter must be 4 bytes aligned
+
 typedef struct
 {
 	int32 param_total_len;  // this lenght includes all the bytes in the user_saved_param
