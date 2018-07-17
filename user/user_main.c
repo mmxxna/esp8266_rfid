@@ -134,8 +134,17 @@ tcp_server_recv_cb(void *arg, char *pusrdata, unsigned short length)
 
    struct espconn *pespconn = arg;
 //   os_printf("tcp recv : %s \r\n", pusrdata);
+   char rtc_time[24];
+   os_sprintf(rtc_time, "rtc cal: %d\n", system_rtc_clock_cali_proc()>>12);
+   espconn_sent(pespconn, rtc_time, os_strlen(rtc_time));
+   if (pusrdata[0] == 'b') {
+       rfid_begin_continuous_inventory();
+   } else if (pusrdata[0] == 'e') {
+       rfid_stop_continuous_inventory();
+   }
 
-   espconn_sent(pespconn, pusrdata, length);
+
+
 
 }
 /******************************************************************************
@@ -316,7 +325,7 @@ uart_recvTask(os_event_t *events)
             d_tmp = READ_PERI_REG(UART_FIFO(UART0)) & 0xFF;
 //            uart_tx_one_char(UART0, d_tmp);
             if (espconn_get_connection_info(pesp_conn,&premot,0) == ESPCONN_OK){
-            	espconn_sent(pesp_conn, d_tmp, 1);
+            	espconn_sent(pesp_conn, &d_tmp, 1);
             }
 
         }

@@ -35,14 +35,21 @@ rfid_send_cmd_frame(uint8_t cmd_type, rfid_frame_data_t * frame_data)
 void ICACHE_FLASH_ATTR
 rfid_single_inventory(void)
 {
-	rfid_send_cmd_frame(CMD_SINGLE_ID, NULL);
+//	rfid_send_cmd_frame(CMD_SINGLE_ID, NULL);
+    os_printf("rtc:%d\n", system_get_rtc_time());
 }
 
 void ICACHE_FLASH_ATTR
 rfid_begin_continuous_inventory(void)
 {
-	os_timer_disarm();
+	os_timer_disarm(&rfid_timer);
 	os_timer_setfn(&rfid_timer, (os_timer_func_t *)rfid_single_inventory, NULL);
 	os_timer_arm(&rfid_timer, 8, 1);
+}
+
+void ICACHE_FLASH_ATTR
+rfid_stop_continuous_inventory(void)
+{
+	os_timer_disarm(&rfid_timer);
 }
 
