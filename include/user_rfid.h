@@ -157,5 +157,6 @@ typedef struct {
 
 void uart_recvTask(os_event_t *events);
 void rfid_begin_continuous_inventory(void);
+void rfid_stop_continuous_inventory(void);
 
 #endif

@@ -42,14 +42,15 @@ rfid_single_inventory(void)
 void ICACHE_FLASH_ATTR
 rfid_begin_continuous_inventory(void)
 {
-	os_timer_disarm(&rfid_timer);
-	os_timer_setfn(&rfid_timer, (os_timer_func_t *)rfid_single_inventory, NULL);
-	os_timer_arm(&rfid_timer, 8, 1);
+    os_printf("start inventory");
+    os_timer_disarm(&rfid_timer);
+    os_timer_setfn(&rfid_timer, (os_timer_func_t *)rfid_single_inventory, NULL);
+    os_timer_arm(&rfid_timer, 30, 1);
 }
 
 void ICACHE_FLASH_ATTR
 rfid_stop_continuous_inventory(void)
 {
-	os_timer_disarm(&rfid_timer);
+    os_printf("stop inventory");
+    os_timer_disarm(&rfid_timer);
 }
-

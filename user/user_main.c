@@ -36,7 +36,7 @@
 
 LOCAL struct espconn esp_conn;
 LOCAL esp_tcp esptcp;
-LOCAL os_timer_t test_timer;
+LOCAL os_timer_t connect_test_timer;
 
 //os_timer_t hello_world_timer;
 
@@ -137,14 +137,14 @@ tcp_server_recv_cb(void *arg, char *pusrdata, unsigned short length)
    char rtc_time[24];
    os_sprintf(rtc_time, "rtc cal: %d\n", system_rtc_clock_cali_proc()>>12);
    espconn_sent(pespconn, rtc_time, os_strlen(rtc_time));
-   if (pusrdata[0] == 'b') {
-       rfid_begin_continuous_inventory();
-   } else if (pusrdata[0] == 'e') {
-       rfid_stop_continuous_inventory();
+
+   if ((pusrdata != NULL) && (length > 0)) {
+       if (pusrdata[0] == 'b') {
+           rfid_begin_continuous_inventory();
+       } else if (pusrdata[0], 'e') {
+           rfid_stop_continuous_inventory();
+       }
    }
-
-
-
 
 }
 /******************************************************************************
@@ -215,7 +215,7 @@ tcp_server_listen(void *arg)
    espconn_regist_disconcb(pesp_conn, tcp_server_discon_cb);
 
    espconn_regist_sentcb(pesp_conn, tcp_server_sent_cb);
-   tcp_server_multi_send();
+//   tcp_server_multi_send();
 }
 
 /******************************************************************************
@@ -253,14 +253,14 @@ user_esp_platform_check_ip(void)
     struct ip_info ipconfig;
 
    //disarm timer first
-    os_timer_disarm(&test_timer);
+    os_timer_disarm(&connect_test_timer);
 
    //get ip info of ESP8266 station
     wifi_get_ip_info(STATION_IF, &ipconfig);
 
     if (wifi_station_get_connect_status() == STATION_GOT_IP && ipconfig.ip.addr != 0) {
 
-      os_printf("got ip !!! \r\n");
+      os_printf("got ip !!! \n");
       user_tcpserver_init(SERVER_LOCAL_PORT);
 
     } else {
@@ -269,13 +269,16 @@ user_esp_platform_check_ip(void)
                 wifi_station_get_connect_status() == STATION_NO_AP_FOUND ||
                 wifi_station_get_connect_status() == STATION_CONNECT_FAIL)) {
 
-        os_printf("connect fail !!! \r\n");
+        os_printf("connect fail, begin esp-touch or airkiss!!! \r\n");
+
+        smartconfig_set_type(SC_TYPE_ESPTOUCH_AIRKISS); //SC_TYPE_ESPTOUCH,SC_TYPE_AIRKISS,SC_TYPE_ESPTOUCH_AIRKISS
+        smartconfig_start(smartconfig_done);
 
         } else {
 
            //re-arm timer to check ip
-            os_timer_setfn(&test_timer, (os_timer_func_t *)user_esp_platform_check_ip, NULL);
-            os_timer_arm(&test_timer, 100, 0);
+            os_timer_setfn(&connect_test_timer, (os_timer_func_t *)user_esp_platform_check_ip, NULL);
+            os_timer_arm(&connect_test_timer, 10000, 0);
         }
     }
 }
@@ -300,9 +303,9 @@ user_set_station_config(void)
    wifi_station_set_config(&(stationConf));
 
    //set a timer to check whether got ip from router succeed or not.
-   os_timer_disarm(&test_timer);
-   os_timer_setfn(&test_timer, (os_timer_func_t *)user_esp_platform_check_ip, NULL);
-   os_timer_arm(&test_timer, 100, 0);
+   os_timer_disarm(&connect_test_timer);
+   os_timer_setfn(&connect_test_timer, (os_timer_func_t *)user_esp_platform_check_ip, NULL);
+   os_timer_arm(&connect_test_timer, 6000, 0);
 }
 
 void ICACHE_FLASH_ATTR
@@ -321,14 +324,16 @@ uart_recvTask(os_event_t *events)
         uint8 count = 0;
         sint8 value = ESPCONN_OK;
 
+        uint8 rx_data[126];
+
         for(idx=0;idx<fifo_len;idx++) {
             d_tmp = READ_PERI_REG(UART_FIFO(UART0)) & 0xFF;
-//            uart_tx_one_char(UART0, d_tmp);
-            if (espconn_get_connection_info(pesp_conn,&premot,0) == ESPCONN_OK){
-            	espconn_sent(pesp_conn, &d_tmp, 1);
-            }
-
+            rx_data[idx] = d_tmp;
         }
+        if (espconn_get_connection_info(pesp_conn,&premot,0) == ESPCONN_OK){
+            espconn_send(pesp_conn, rx_data, fifo_len);
+        }
+
         WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_FULL_INT_CLR|UART_RXFIFO_TOUT_INT_CLR);
         uart_rx_intr_enable(UART0);
     #endif
@@ -372,17 +377,16 @@ user_init(void)
 
 	// ESP8266 connect to router.
 	if (!has_connection_information)	{
-		// begin smart config
-		smartconfig_set_type(SC_TYPE_ESPTOUCH_AIRKISS); //SC_TYPE_ESPTOUCH,SC_TYPE_AIRKISS,SC_TYPE_ESPTOUCH_AIRKISS
-		smartconfig_start(smartconfig_done);
-	} else {
-		user_set_station_config();
-	}
+        // begin smart config
+        smartconfig_set_type(SC_TYPE_ESPTOUCH_AIRKISS); //SC_TYPE_ESPTOUCH,SC_TYPE_AIRKISS,SC_TYPE_ESPTOUCH_AIRKISS
+        smartconfig_start(smartconfig_done);
+    } else {
+        user_set_station_config();
+    }
 
 	// if the saved AP can not be connected, it should reset and clear the saved user_param to run ESPTOUCH or Airkiss
 
-	// start TCP server
-	user_tcpserver_init(SERVER_LOCAL_PORT);
+	// start TCP server after connection established during user_esp_platform_check_ip
+//	user_tcpserver_init(SERVER_LOCAL_PORT);
 
 }
-

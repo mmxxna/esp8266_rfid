@@ -235,7 +235,7 @@ uart0_rx_intr_handler(void *para)
 	/*ALL THE FUNCTIONS CALLED IN INTERRUPT HANDLER MUST BE DECLARED IN RAM */
 	/*IF NOT , POST AN EVENT AND PROCESS IN SYSTEM TASK */
     if(UART_FRM_ERR_INT_ST == (READ_PERI_REG(UART_INT_ST(uart_no)) & UART_FRM_ERR_INT_ST)){
-        DBG1("FRM_ERR\r\n");
+        DBG1("FRM_ERR\n");
         WRITE_PERI_REG(UART_INT_CLR(uart_no), UART_FRM_ERR_INT_CLR);
     }else if(UART_RXFIFO_FULL_INT_ST == (READ_PERI_REG(UART_INT_ST(uart_no)) & UART_RXFIFO_FULL_INT_ST)){
         DBG("f");
@@ -292,7 +292,7 @@ uart_init(UartBautRate uart0_br, UartBautRate uart1_br)
 {
     /*this is a example to process uart data from task,please change the priority to fit your application task if exists*/
 //    system_os_task(uart_recvTask, uart_recvTaskPrio, uart_recvTaskQueue, uart_recvTaskQueueLen);  //demo with a task to process the uart data
-    
+
     UartDev.baut_rate = uart0_br;
     uart_config(UART0);
     UartDev.baut_rate = uart1_br;
@@ -765,5 +765,4 @@ uart_init_2(UartBautRate uart0_br, UartBautRate uart1_br)
     // install uart1 putc callback
     os_install_putc1((void *)uart1_write_char);//print output at UART1
 }
-
 
