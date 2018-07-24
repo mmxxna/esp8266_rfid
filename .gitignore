@@ -3,6 +3,7 @@ bin/upgrade
 
 # Compile intermediate file
 .output
+.build
 *.d
 *.o
 
