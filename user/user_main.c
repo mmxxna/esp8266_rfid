@@ -127,6 +127,7 @@ tcp_server_sent_cb(void *arg)
  * Parameters   : arg -- Additional argument to pass to the callback function
  * Returns      : none
 *******************************************************************************/
+/****
 LOCAL void ICACHE_FLASH_ATTR
 tcp_server_recv_cb(void *arg, char *pusrdata, unsigned short length)
 {
@@ -147,6 +148,8 @@ tcp_server_recv_cb(void *arg, char *pusrdata, unsigned short length)
    }
 
 }
+*****/
+
 /******************************************************************************
  * FunctionName : tcp_server_discon_cb
  * Description  : disconnect callback.
@@ -210,7 +213,7 @@ tcp_server_listen(void *arg)
    struct espconn *pesp_conn = arg;
    os_printf("tcp_server_listen !!! \r\n");
 
-   espconn_regist_recvcb(pesp_conn, tcp_server_recv_cb);
+   espconn_regist_recvcb(pesp_conn, tcp_recv_cb);
    espconn_regist_reconcb(pesp_conn, tcp_server_recon_cb);
    espconn_regist_disconcb(pesp_conn, tcp_server_discon_cb);
 
@@ -388,5 +391,7 @@ user_init(void)
 
 	// start TCP server after connection established during user_esp_platform_check_ip
 //	user_tcpserver_init(SERVER_LOCAL_PORT);
+
+	os_printf("free heap size: %d\n", system_get_free_heap_size());
 
 }
