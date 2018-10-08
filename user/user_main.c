@@ -160,7 +160,7 @@ LOCAL void ICACHE_FLASH_ATTR
 tcp_server_discon_cb(void *arg)
 {
    //tcp disconnect successfully
-
+    system_os_post(tcp_recvTaskPrio, TCP_SIG_DISCONNECTED, 0);
     os_printf("tcp disconnect succeed !!! \r\n");
 }
 
@@ -212,6 +212,9 @@ tcp_server_listen(void *arg)
 {
    struct espconn *pesp_conn = arg;
    os_printf("tcp_server_listen !!! \r\n");
+
+   // create system task for LLRP stream
+   init_tcp_llrp_task();
 
    espconn_regist_recvcb(pesp_conn, tcp_recv_cb);
    espconn_regist_reconcb(pesp_conn, tcp_server_recon_cb);
@@ -392,6 +395,6 @@ user_init(void)
 	// start TCP server after connection established during user_esp_platform_check_ip
 //	user_tcpserver_init(SERVER_LOCAL_PORT);
 
-	os_printf("free heap size: %d\n", system_get_free_heap_size());
+//	os_printf("free heap size: %d\n", system_get_free_heap_size());  // about 53K
 
 }
